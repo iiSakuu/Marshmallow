@@ -222,7 +222,7 @@ class Misc(commands.Cog):
 
         checkleave = await self.bot.con.fetchone('SELECT * FROM Guild_Settings WHERE guild_id=$1', member.guild.id)
 
-        if checkleave['leave_message'] == 'FALSE':
+        if checkleave is None or checkleave['leave_message'] == 'FALSE':
             return
 
         guild_info = self.bot.get_guild(member.guild.id)
