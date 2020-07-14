@@ -1,13 +1,12 @@
 import asyncio
 import discord
-from discord import Game
 from discord.ext.commands import Bot
 from discord.ext import commands
-import random
 import logging
 import os
 import asqlite
 import config
+import pendulum
 
 logger = logging.getLogger('discord')
 logger.setLevel(logging.DEBUG)
@@ -15,15 +14,17 @@ handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w'
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 logger.addHandler(handler)
 
-BOT_PREFIX = ('>>')
+BOT_PREFIX = ('!!')
 
 bot = Bot(
     command_prefix=BOT_PREFIX,
-    activity=discord.Game(name='Use >>help for a list of commands')
+    activity=discord.Game(name='Use !!help for a list of commands')
 )
 
 bot.owo_counter = 0
 bot.f_counter = 0
+
+bot.start_time = pendulum.now()
 
 
 async def start():
@@ -38,20 +39,6 @@ async def on_message(message):
     await bot.process_commands(message)
 
 # for Juli server
-
-
-@bot.event
-async def on_member_remove(member: discord.Member):
-    if member.guild.id == 236959873676476417:
-        channel = bot.get_channel(555428796874883072)
-        leave = discord.Embed(
-            title='A user has left the server!',
-            colour=0xffb5f7
-        )
-        leave.add_field(name='\u200b', value=f'{member.name}')
-        leave.set_thumbnail(url=member.avatar_url)
-        leave.set_footer(text=f'ID: {member.id}')
-        await channel.send(embed=leave)
 
 
 @bot.event

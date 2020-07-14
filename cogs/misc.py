@@ -3,11 +3,16 @@ import os
 from discord.ext import commands
 import discord
 import asqlite
+import psutil
+import urllib.parse
+import pendulum
 
 
 class Misc(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.process = psutil.Process()
+        self.bot.invite_url = f'https://discordapp.com/oauth2/authorize?client_id=331890706866110465&scope=bot&permissions=1375202551'
 
     @commands.command()
     async def avatar(self, ctx, member: discord.Member = None):
@@ -25,6 +30,7 @@ class Misc(commands.Cog):
 
         picklechips = await ctx.bot.con.fetchone('SELECT month, day, year FROM Birthdays WHERE userid=$1', member.id)
         roles = [role for role in member.roles]
+        guilds = [guild for guild in self.bot.guilds]
 
         userinfos = discord.Embed(
             title=f"{member.name}'s user info",
@@ -56,7 +62,70 @@ class Misc(commands.Cog):
         userinfos.set_thumbnail(url=member.avatar_url)
         userinfos.set_footer(text=f'ID: {member.id}')
 
-        await ctx.send(embed=userinfos)
+        ramUsage = self.process.memory_full_info().uss / 1024**2
+        cpuUsage = self.process.cpu_percent() / psutil.cpu_count()
+        now = pendulum.now()
+        uptime = (now - self.bot.start_time)
+
+        marshinfo = discord.Embed(
+            title="Marshmallow's info",
+            colour=0xffb5f7,
+            timestamp=ctx.message.created_at
+        )
+        marshinfo.add_field(
+            name='Nickname',
+            value=member.display_name
+        )
+        marshinfo.add_field(
+            name='Joined at',
+            value=member.joined_at.strftime('%a, %#d, %B, %Y, %I:%M %p UTC')
+        )
+        marshinfo.add_field(
+            name='Library',
+            value=f'discord.py {discord.__version__}'
+        )
+        marshinfo.add_field(
+            name='Servers',
+            value=f'{len(guilds)}'
+        )
+        marshinfo.add_field(
+            name='Member count',
+            value=f'{len(self.bot.users)}'
+        )
+        marshinfo.add_field(
+            name='Commands',
+            value=len(self.bot.commands)
+        )
+        marshinfo.add_field(
+            name='Latency',
+            value=f'{round(self.bot.latency * 1000)}ms'
+        )
+        marshinfo.add_field(
+            name='Memory Usage',
+            value=f'{ramUsage:.2f}MiB'
+        )
+        marshinfo.add_field(
+            name='CPU Usage',
+            value=f'{cpuUsage:.2f}%'
+        )
+        marshinfo.add_field(
+            name='Uptime',
+            value=uptime.in_words(locale='en')
+        )
+        marshinfo.add_field(
+            name='Links',
+            value=f'[Invite me!]({self.bot.invite_url})'
+        )
+        marshinfo.set_thumbnail(url=member.avatar_url)
+        marshinfo.set_footer(
+            text=f'Requested by {ctx.author.display_name}',
+            icon_url=ctx.author.avatar_url
+        )
+
+        if member.id == 331890706866110465:
+            await ctx.send(embed=marshinfo)
+        else:
+            await ctx.send(embed=userinfos)
 
     @commands.command(name='birthdayadd')
     async def birthdayadd(self, ctx, month, day: int, year: int):
@@ -96,7 +165,6 @@ class Misc(commands.Cog):
         result = ', '.join(str(random.randint(1, limit)) for r in range(rolls))
         await ctx.send(result)
 
-
     @commands.command()
     async def marshmallow(self, ctx):
         '''Sends random pictures of marshmallows'''
@@ -120,6 +188,58 @@ class Misc(commands.Cog):
             embed=givemarshmallow
         )
 
+    @commands.command()
+    async def leavechannel(self, ctx, channel: discord.TextChannel):
+
+        leave_channel = await ctx.bot.con.fetchone('SELECT * FROM Guild_Settings WHERE guild_id=$1', ctx.guild.id)
+
+        if leave_channel is None:
+            await ctx.bot.con.execute('INSERT INTO Guild_Settings (guild_id, leave_message_channel) VALUES ($1, $2)', ctx.guild.id, channel.id)
+        else:
+            await ctx.bot.con.execute('UPDATE Guild_Settings SET leave_message_channel=$1 WHERE guild_id=$2', channel.id, ctx.guild.id)
+        await ctx.send('Updated your channel.')
+
+    @commands.command()
+    async def setleave(self, ctx, message: str):
+        '''Sets whether or not you want Marshmallow to send leave messages
+           Example: >>setleave TRUE'''
+
+        checkleave = await ctx.bot.con.fetchone('SELECT * FROM Guild_Settings WHERE guild_id=$1', ctx.guild.id)
+
+        if message == 'TRUE':
+            await ctx.bot.con.execute('UPDATE Guild_Settings SET leave_message=$1 WHERE guild_id=$2', message, ctx.guild.id)
+            await ctx.send('Updated to ``TRUE``.')
+
+        elif message == 'FALSE':
+            await ctx.bot.con.execute('UPDATE Guild_Settings SET leave_message=$1 WHERE guild_id=$2', message, ctx.guild.id)
+            await ctx.send('Updated to ``FALSE``.')
+
+        else:
+            await ctx.send('Please provide either `TRUE` or `FALSE`.')
+
+    @commands.Cog.listener()
+    async def on_member_remove(self, member: discord.Member):
+
+        checkleave = await self.bot.con.fetchone('SELECT * FROM Guild_Settings WHERE guild_id=$1', member.guild.id)
+
+        if checkleave['leave_message'] == 'FALSE':
+            return
+
+        guild_info = self.bot.get_guild(member.guild.id)
+        leave_message_channel_id = checkleave['leave_message_channel']
+        leave_message_channel = guild_info.get_channel(leave_message_channel_id)
+
+        leave = discord.Embed(
+            title='A user has left the server!',
+            colour=0xffb5f7
+        )
+        leave.add_field(name='\u200b', value=f'{member.name}')
+        leave.set_thumbnail(url=member.avatar_url)
+        leave.set_footer(text=f'ID: {member.id}')
+
+        await leave_message_channel.send(
+            embed=leave
+        )
 
 def setup(bot):
     bot.add_cog(Misc(bot))
