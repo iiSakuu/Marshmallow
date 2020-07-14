@@ -16,11 +16,36 @@ class Misc(commands.Cog):
 
     @commands.command()
     async def avatar(self, ctx, member: discord.Member = None):
+        '''Display yours or someone else's avatar'''
+
+
         if member is None:
             member = ctx.author
-            await ctx.send(f"Here's your avatar! \n{member.avatar_url}")
+
+            youravatar_embed = discord.Embed(
+                colour=0xffb5f7,
+                timestamp=ctx.message.created_at
+            )
+            youravatar_embed.set_image(
+                url=member.avatar_url
+            )
+
+            await ctx.send(
+                f"Here's your avatar!",
+                embed=youravatar_embed
+            )
         else:
-            await ctx.send(f"Here's {member.mention}'s avatar! \n{member.avatar_url}")
+            avatar_embed = discord.Embed(
+                colour=0xffb5f7,
+                timestamp=ctx.message.created_at
+            )
+            avatar_embed.set_image(
+                url=member.avatar_url
+            )
+            await ctx.send(
+                f"Here's {member.mention}'s avatar!",
+                embed=avatar_embed
+             )
 
     # userinfocommand
     @commands.command()
@@ -28,7 +53,6 @@ class Misc(commands.Cog):
         if member is None:
             member = ctx.author
 
-        picklechips = await ctx.bot.con.fetchone('SELECT month, day, year FROM Birthdays WHERE userid=$1', member.id)
         roles = [role for role in member.roles]
         guilds = [guild for guild in self.bot.guilds]
 
@@ -54,16 +78,11 @@ class Misc(commands.Cog):
             inline=False
         )
         userinfos.add_field(name='Top role:', value=member.top_role.mention)
-        if picklechips is not None:
-            userinfos.add_field(
-                name='Birthday',
-                value=f'{picklechips["month"]} {picklechips["day"]} {picklechips["year"]}'
-            )
         userinfos.set_thumbnail(url=member.avatar_url)
         userinfos.set_footer(text=f'ID: {member.id}')
 
         ramUsage = self.process.memory_full_info().uss / 1024**2
-        cpuUsage = self.process.cpu_percent() / psutil.cpu_count()
+        cpuUsage = self.process.cpu_percent()
         now = pendulum.now()
         uptime = (now - self.bot.start_time)
 
@@ -127,8 +146,90 @@ class Misc(commands.Cog):
         else:
             await ctx.send(embed=userinfos)
 
-    @commands.command(name='birthdayadd')
-    async def birthdayadd(self, ctx, month, day: int, year: int):
+    @commands.command()
+    async def profile(self, ctx, member: discord.Member = None):
+        '''Show all your fancy info. Like userinfo, but not.'''
+
+        if member is None:
+            member = ctx.author
+
+        query = '''
+SELECT Profiles.user_id, Profiles.description, Quotes.quote, Currency.moneys, Birthdays.month, Birthdays.day, Birthdays.year
+ FROM Profiles LEFT JOIN Quotes ON
+ Profiles.favourite_quote = Quotes.id LEFT JOIN Currency ON
+ Currency.user_id = Profiles.user_id LEFT JOIN Birthdays ON
+ Birthdays.user_id = Profiles.user_id WHERE Profiles.user_id=$1
+'''
+        row = await ctx.bot.con.fetchone(query, member.id)
+
+        if row is None:
+            await ctx.bot.con.execute('INSERT INTO Profiles (user_id) VALUES ($1)', member.id)
+            row = await ctx.bot.con.fetchone(query, member.id)
+
+        profile_embed = discord.Embed(
+            title=f"{member.name}'s profile",
+            colour=0xffb5f7,
+            timestamp=ctx.message.created_at
+        )
+        profile_embed.add_field(
+            name='Name',
+            value=member.display_name
+        )
+        profile_embed.add_field(
+            name='Description',
+            value=row["description"][:1024]
+        )
+        profile_embed.add_field(
+            name='Balance',
+            value=row['moneys'] or 0
+        )
+        if row['month'] is not None:
+            profile_embed.add_field(
+                name='Birthday',
+                value=f'{row["month"]} {row["day"]} {row["year"]}'
+            )
+        profile_embed.add_field(
+            name='Favourite Quote',
+            value=row["quote"][:1024] if row["quote"] else None
+        )
+        profile_embed.set_thumbnail(
+            url=member.avatar_url
+        )
+
+        await ctx.send(embed=profile_embed)
+
+    @commands.command(aliases=['setdescription'])
+    async def setdesc(self, ctx, *, message: str):
+        '''Set the description for your profile
+           Example: >>setdesc potato'''
+
+        row = await ctx.bot.con.fetchone('SELECT * FROM Profiles WHERE user_id=$1', ctx.author.id)
+
+        if row is not None:
+            await ctx.bot.con.execute('UPDATE Profiles SET description=$1 WHERE user_id=$2', message, ctx.author.id)
+        else:
+            await ctx.bot.con.execute('INSERT INTO Profiles (user_id, description) VALUES ($1, $2)', ctx.author.id, message)
+        await ctx.send('Updated.')
+
+    @commands.command(aliases=['favequote'])
+    async def setfavequote(self, ctx, message: int):
+        '''Set your all time favourite quote'''
+
+        row = await ctx.bot.con.fetchone('SELECT * FROM Profiles WHERE user_id=$1', ctx.author.id)
+        quote = await ctx.bot.con.fetchone('SELECT * FROM Quotes WHERE guild_id=$1 and quote_id=$2', ctx.guild.id, message)
+
+        if quote is None:
+            await ctx.send(f'There is no quote with the id `{message}`.')
+            return
+
+        if row is None:
+            await ctx.bot.con.execute('INSERT INTO Profiles (user_id, favourite_quote) VALUES ($1, $2)', ctx.author.id, quote["id"])
+        else:
+            await ctx.bot.con.execute('UPDATE Profiles SET favourite_quote=$1 WHERE user_id=$2', quote["id"], ctx.author.id)
+        await ctx.send(f'Updated your favourite quote to `{message}`.')
+
+    @commands.command(name='addbirthday')
+    async def birthdayadd(self, ctx, month, day: int, year: int = None):
         '''Example: >>birthdayadd April 1 1999
            Shows up on your user info.'''
 
@@ -136,12 +237,12 @@ class Misc(commands.Cog):
         if day > 31:
             await ctx.send("Sorry, we don't accept aliens.")
         else:
-            pekopeko = await ctx.bot.con.fetchone('SELECT * FROM Birthdays WHERE userid=$1', ctx.author.id)
+            pekopeko = await ctx.bot.con.fetchone('SELECT * FROM Birthdays WHERE user_id=$1', ctx.author.id)
             if pekopeko is not None:
-                await ctx.bot.con.execute('UPDATE Birthdays SET month=$1, day=$2, year=$3 WHERE userid=$4', month, day, year, ctx.author.id)
+                await ctx.bot.con.execute('UPDATE Birthdays SET month=$1, day=$2, year=$3 WHERE user_id=$4', month, day, year, ctx.author.id)
                 await ctx.send('Your birthday has been updated.')
             else:
-                await ctx.bot.con.execute('INSERT INTO Birthdays (userid, month, day, year) VALUES ($1, $2, $3, $4)', ctx.author.id, month, day, year)
+                await ctx.bot.con.execute('INSERT INTO Birthdays (user_id, month, day, year) VALUES ($1, $2, $3, $4)', ctx.author.id, month, day, year)
                 await ctx.send('Your birthday has been added into the database.')
 
     @commands.command()
@@ -240,6 +341,84 @@ class Misc(commands.Cog):
         await leave_message_channel.send(
             embed=leave
         )
+
+    @commands.has_permissions(manage_messages=True)
+    @commands.command()
+    async def addquote(self, ctx, *, message: str):
+        '''Quote people's embarrasing moments eternally
+           Example: >>addquote potato'''
+
+        row = await ctx.bot.con.fetchone('SELECT quote FROM Quotes WHERE guild_id=$1 AND quote=$2', ctx.guild.id, message)
+
+        if row is not None:
+            await ctx.send('This quote is already added.')
+            return
+
+        whatthefuckwasthelastnumber = await ctx.bot.con.fetchone('SELECT COUNT(*) AS count FROM Quotes WHERE guild_id=$1', ctx.guild.id)
+
+        quotenumber = (whatthefuckwasthelastnumber['count'] + 1)
+
+        await ctx.bot.con.execute('INSERT INTO Quotes (guild_id, quote, quote_id) VALUES ($1, $2, $3)', ctx.guild.id, message, quotenumber)
+        await ctx.send(f'Added your quote `{quotenumber}`.')
+
+    @addquote.error
+    async def addquote_error(self, ctx, error):
+        if isinstance(error, commands.MissingPermissions):
+            await ctx.send('Permissions not detected. You need `manage_messages`')
+        else:
+            traceback.print_exc()
+
+    @commands.command()
+    async def quote(self, ctx, message: int = None):
+        '''Find a quote or have one selected for you!
+           Example: >>quote 3'''
+
+        if message is not None:
+            try:
+                row = await ctx.bot.con.fetchone('SELECT quote FROM Quotes WHERE guild_id=$1 and quote_id=$2', ctx.guild.id, message)
+                quotemessage = discord.Embed(
+                    description=f'{message}. {row["quote"]}',
+                    colour=0xffb5f7,
+                    timestamp=ctx.message.created_at
+                )
+                quotemessage.set_footer(
+                    text=f'Requested by {ctx.author.display_name}',
+                    icon_url=ctx.author.avatar_url
+                )
+                await ctx.send(embed=quotemessage)
+            except OverflowError:
+                await ctx.send(f"Holy- hold back on the numbers! It's way too big for me >:C")
+
+            if row is None:
+                await ctx.send(f'There is no quote under the id `{message}`')
+        else:
+            randomrow = await ctx.bot.con.fetchone('SELECT quote, quote_id FROM Quotes WHERE guild_id=$1 ORDER BY random()', ctx.guild.id)
+            randomquote = discord.Embed(
+                description=f'{randomrow["quote_id"]}. {randomrow["quote"]}',
+                colour=0xffb5f7,
+                timestamp=ctx.message.created_at
+            )
+            randomquote.set_footer(
+                text=f'Requested by {ctx.author.display_name}',
+                icon_url=ctx.author.avatar_url
+             )
+            await ctx.send(embed=randomquote)
+
+    @commands.has_permissions(manage_messages=True)
+    @commands.command(aliases=['quoteremove', 'begonequote'])
+    async def removequote(self, ctx, message: int = None):
+        '''Erase any embarassing moments from history
+           Example: >>removequote 4'''
+
+        row = await ctx.bot.con.fetchone('SELECT quote FROM Quotes WHERE guild_id=$1 and quote_id=$2', ctx.guild.id, message)
+
+        if row is None:
+            await ctx.send(f'There is no quote under the id `{message}`.')
+        else:
+            deleterow = await ctx.bot.con.execute('DELETE FROM Quotes WHERE guild_id=$1 and quote_id=$2', ctx.guild.id, message)
+            await ctx.send(f'Deleted quote `{message}`.')
+
+
 
 def setup(bot):
     bot.add_cog(Misc(bot))

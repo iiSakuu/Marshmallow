@@ -14,10 +14,10 @@ class Economy(commands.Cog):
         if member is None:
             member = ctx.author
 
-        money = await ctx.bot.con.fetchone('SELECT * FROM Currency WHERE userid=$1', member.id)
+        money = await ctx.bot.con.fetchone('SELECT * FROM Currency WHERE user_id=$1', member.id)
         if money is None:
-            await ctx.bot.con.execute('INSERT INTO Currency (userid) VALUES ($1)', member.id)
-            newmoney = await ctx.bot.con.fetchone('SELECT * FROM Currency WHERE userid=$1', member.id)
+            await ctx.bot.con.execute('INSERT INTO Currency (user_id) VALUES ($1)', member.id)
+            newmoney = await ctx.bot.con.fetchone('SELECT * FROM Currency WHERE user_id=$1', member.id)
             await ctx.send(f'Your starting balance is `{newmoney["moneys"]}`')
         else:
             await ctx.send(f'Your balance is `{money["moneys"]}` marshmallows.')
@@ -28,12 +28,12 @@ class Economy(commands.Cog):
         '''OP asf spawn money from nowhere - owner only for a reason
            Become the government?'''
 
-        spawnmoneyoutofnowhere = await ctx.bot.con.fetchone('SELECT * FROM Currency WHERE userid=$1', member.id)
+        spawnmoneyoutofnowhere = await ctx.bot.con.fetchone('SELECT * FROM Currency WHERE user_id=$1', member.id)
         if spawnmoneyoutofnowhere is not None:
             finalamount = (amount + spawnmoneyoutofnowhere['moneys'])
-            await ctx.bot.con.execute('UPDATE Currency SET moneys=$1 WHERE userid=$2', finalamount, member.id)
+            await ctx.bot.con.execute('UPDATE Currency SET moneys=$1 WHERE user_id=$2', finalamount, member.id)
         else:
-            await ctx.bot.con.fetchone('INSERT INTO Currency (userid, moneys) VALUES ($1, $2)', member.id, amount)
+            await ctx.bot.con.fetchone('INSERT INTO Currency (user_id, moneys) VALUES ($1, $2)', member.id, amount)
         await ctx.send(f'Successfully given ``{amount}`` marshmallows to **{member.name}**')
 
 def setup(bot):
