@@ -6,6 +6,7 @@ import asqlite
 import psutil
 import urllib.parse
 import pendulum
+import traceback
 
 
 class Misc(commands.Cog):
