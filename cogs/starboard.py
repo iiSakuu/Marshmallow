@@ -85,7 +85,7 @@ class Starboard(commands.Cog):
     def starboard_embed(self, starred_message_info, reaction):
         star_embed = discord.Embed(
             description=starred_message_info.content,
-            colour=0xffd6f1,
+            colour=0xffb5f7,
             timestamp=starred_message_info.created_at
         )
         star_embed.set_author(
