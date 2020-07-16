@@ -43,7 +43,7 @@ class Profiles(commands.Cog):
             name='Description',
             value=row["description"][:1024]
         )
-        marriage = await ctx.bot.con.fetchone('SELECT * FROM Marriage WHERE user_id=$1 and guild_id=$2', ctx.author.id, ctx.guild.id)
+        marriage = await ctx.bot.con.fetchone('SELECT * FROM Marriage WHERE user_id=$1 and guild_id=$2', member.id, ctx.guild.id)
         if marriage is not None:
             profile_embed.add_field(
                 name='Married to',
