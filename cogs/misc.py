@@ -51,7 +51,7 @@ class Misc(commands.Cog):
     async def marry(self, ctx, member: discord.Member, *, message: str = None):
         '''Marry your friends or a partner, may include a message'''
 
-        row = await ctx.bot.con.fetchone('SELECT * FROM Marriage WHERE user_id=$1', ctx.author.id)
+        row = await ctx.bot.con.fetchone('SELECT * FROM Marriage WHERE user_id=$1 and guild_id=$2', ctx.author.id, ctx.guild.id)
 
         if row is None:
             if message is not None:
@@ -84,7 +84,7 @@ class Misc(commands.Cog):
 
             message = await ctx.bot.wait_for('message', check=check)
             if message.content.lower() in ['yes', 'y']:
-                await ctx.bot.con.execute('INSERT INTO Marriage (guild_id, user_id, married_to, married_user_id, date) VALUES ($1, $2, $3, $4, $5)', ctx.guild.id, ctx.author.id, ctx.author.id, member.id, message.created_at.strftime('%a %#d %B, %Y'))
+                await ctx.bot.con.execute('INSERT INTO Marriage (guild_id, user_id, married_to, married_user_id, date) VALUES ($1, $2, $3, $4, $5)', ctx.guild.id, ctx.author.id, ctx.author.name, member.id, message.created_at.strftime('%a %#d %B, %Y'))
                 await ctx.bot.con.execute('INSERT INTO Marriage (guild_id, user_id, married_to, married_user_id, date) VALUES ($1, $2, $3, $4, $5)', ctx.guild.id, member.id, member.name, ctx.author.id, message.created_at.strftime('%a %#d %B, %Y'))
                 await ctx.send(embed=success)
             elif message.content.lower() in ['no', 'n']:
