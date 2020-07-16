@@ -84,8 +84,8 @@ class Misc(commands.Cog):
 
             message = await ctx.bot.wait_for('message', check=check)
             if message.content.lower() in ['yes', 'y']:
-                await ctx.bot.con.execute('INSERT INTO Marriage (guild_id, user_id, married_to, married_user_id, date) VALUES ($1, $2, $3, $4, $5)', ctx.guild.id, ctx.author.id, ctx.author.name, member.id, message.created_at.strftime('%a %#d %B, %Y'))
-                await ctx.bot.con.execute('INSERT INTO Marriage (guild_id, user_id, married_to, married_user_id, date) VALUES ($1, $2, $3, $4, $5)', ctx.guild.id, member.id, member.name, ctx.author.id, message.created_at.strftime('%a %#d %B, %Y'))
+                await ctx.bot.con.execute('INSERT INTO Marriage (guild_id, user_id, married_to, married_user_id, date) VALUES ($1, $2, $3, $4, $5)', ctx.guild.id, ctx.author.id, member.name, member.id, message.created_at.strftime('%a %#d %B, %Y'))
+                await ctx.bot.con.execute('INSERT INTO Marriage (guild_id, user_id, married_to, married_user_id, date) VALUES ($1, $2, $3, $4, $5)', ctx.guild.id, member.id, ctx.author.name, ctx.author.id, message.created_at.strftime('%a %#d %B, %Y'))
                 await ctx.send(embed=success)
             elif message.content.lower() in ['no', 'n']:
                 failure = discord.Embed(
