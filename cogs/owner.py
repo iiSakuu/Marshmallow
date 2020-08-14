@@ -49,12 +49,27 @@ class Owner(commands.Cog):
         await ctx.send('Beep boop, shutting down.')
         await self.bot.logout()
 
+    # Intended for marshmallow nickname change
     @commands.is_owner()
     @commands.command()
     async def setnick(self, ctx, member: discord.Member, message: str, *, reason=None):
         await ctx.message.delete()
         await member.edit(nick=message, reason=reason)
         await ctx.send(f'Changed my nickname to `{message}`.')
+
+    @commands.is_owner()
+    @commands.command()
+    async def serverlist(self, ctx):
+
+        guilds = [guild.name for guild in self.bot.guilds]
+
+        servers = discord.Embed(
+            title=f'Servers ({len(guilds)})',
+            description="\n".join(guilds),
+            colour=0xffb5f7,
+            timestamp=ctx.message.created_at
+        )
+        await ctx.send(embed=servers)
 
 
 def setup(bot):

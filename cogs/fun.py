@@ -138,5 +138,48 @@ class Fun(commands.Cog):
             embed=respects
         )
 
+    @commands.command(aliases=['uwu', 'owo', 'owoify'])
+    async def owoconverter(self, ctx, *, message):
+        '''Unleash your inner owo'''
+
+        message_received = message
+
+        first_pass = message_received.replace('r', 'w')
+        second_pass = first_pass.replace('l', 'w')
+
+        ending = [
+            ' uwu',
+            ' owo',
+            ' x3',
+            ' -////-',
+            ' >///<',
+            ' >w<',
+            ' :3',
+            'ᵘʷᵘ',
+            ' >:3c'
+        ]
+
+        final_translation = (second_pass + random.choice(ending))
+
+        owo_translater = discord.Embed(
+            description=f'**Your text:**\n {message} \n **Translated:** \n {final_translation}',
+            colour=0xffb5f7,
+            timestamp=ctx.message.created_at
+        )
+        owo_translater.set_author(
+            name=ctx.message.author.display_name,
+            icon_url=ctx.message.author.avatar_url
+        )
+        owo_translater.set_footer(
+            text='Normal -> OwO'
+        )
+
+        await ctx.send(embed=owo_translater)
+
+    @commands.command()
+    async def lovetester(self, ctx, person1 : discord.Member, person2: discord.Member):
+        if person2 is None:
+            person2 = ctx.author
+
 def setup(bot):
     bot.add_cog(Fun(bot))
