@@ -176,10 +176,31 @@ class Fun(commands.Cog):
 
         await ctx.send(embed=owo_translater)
 
-    @commands.command()
-    async def lovetester(self, ctx, person1 : discord.Member, person2: discord.Member):
+    @commands.command(aliases=['love'])
+    async def lovetester(self, ctx, person1 : discord.Member, person2: discord.Member = None):
         if person2 is None:
             person2 = ctx.author
+
+        if person1 == person2:
+            await ctx.send("Sorry, you can't try and ship yourself with yourself ):")
+            return
+
+        love_test = await ctx.bot.con.fetchone('SELECT * FROM Love_Tester WHERE user_id=$1 AND other_person_id=$2', person1.id, person2.id)
+
+        if love_test is None:
+            rating = random.randint(0, 100)
+            await ctx.bot.con.execute('INSERT INTO Love_Tester (user_id, other_person_id, rating) VALUES ($1, $2, $3)', person1.id, person2.id, rating)
+            await ctx.bot.con.execute('INSERT INTO Love_Tester (user_id, other_person_id, rating) VALUES ($1, $2, $3)', person2.id, person1.id, rating)
+            await ctx.send(f'**{person1.display_name}** and **{person2.display_name}** have a rating of {rating}%')
+        else:
+            await ctx.send(f'**{person1.display_name}** and **{person2.display_name}** have a rating of {love_test["rating"]}%')
+
+    @commands.command()
+    async def lovelist(self, ctx):
+
+        members = [member.id for member in guild.members]
+
+        love_list = await ctx.bot.con.fetchone(f'SELECT * FROM Love_Tester WHERE user_id IN ({members})')
 
 def setup(bot):
     bot.add_cog(Fun(bot))

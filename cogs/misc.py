@@ -235,6 +235,32 @@ class Misc(commands.Cog):
             await ctx.send(embed=userinfos)
 
     @commands.command()
+    async def birthdays(self, ctx):
+        '''Display all the birthdays set in your server'''
+
+        members = [str(member.id) for member in ctx.guild.members]
+        all_birthdays = await ctx.bot.con.fetchall(f'SELECT * FROM Birthdays WHERE user_id IN ({", ".join(members)})')
+
+        member_info = [f'**{ctx.guild.get_member(member["user_id"]).display_name}** - {member["month"]} {member["day"]}' for member in all_birthdays]
+        final = "\n".join(member_info)
+
+        birthday_message = discord.Embed(
+            title=f"{ctx.guild.name}'s birthdays",
+            description=final,
+            colour=0xffb5f7,
+            timestamp=ctx.message.created_at
+        )
+        birthday_message.set_thumbnail(
+            url=ctx.guild.icon_url
+        )
+        birthday_message.set_footer(
+            text=f'Requested by {ctx.author.display_name}',
+            icon_url=ctx.author.avatar_url
+        )
+
+        await ctx.send(embed=birthday_message)
+
+    @commands.command()
     async def ping(self, ctx):
         pong = discord.Embed(title='Pong!', color=0xffd6f1)
         pong.add_field(
