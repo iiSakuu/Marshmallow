@@ -194,7 +194,7 @@ class Fun(commands.Cog):
             await ctx.bot.con.execute('INSERT INTO Love_Tester (user_id, other_person_id, rating) VALUES ($1, $2, $3)', person1.id, person2.id, rating)
             await ctx.bot.con.execute('INSERT INTO Love_Tester (user_id, other_person_id, rating) VALUES ($1, $2, $3)', person2.id, person1.id, rating)
 
-        if int(love_test['rating']) < 10:
+        if 0 < int(love_test['rating']) < 10:
             result = discord.Embed(
                 description=f'{person1.display_name} - 💔 - {person2.display_name}',
                 colour=0xffb5f7,
