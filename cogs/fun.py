@@ -193,45 +193,47 @@ class Fun(commands.Cog):
         if love_test is None:
             await ctx.bot.con.execute('INSERT INTO Love_Tester (user_id, other_person_id, rating) VALUES ($1, $2, $3)', person1.id, person2.id, rating)
             await ctx.bot.con.execute('INSERT INTO Love_Tester (user_id, other_person_id, rating) VALUES ($1, $2, $3)', person2.id, person1.id, rating)
+        else:
+            rating = love_test['rating']
 
-        if 0 < int(love_test['rating']) < 10:
+        if 0 < int(rating) < 10:
             result = discord.Embed(
                 description=f'{person1.display_name} - 💔 - {person2.display_name}',
                 colour=0xffb5f7,
                 timestamp=ctx.message.created_at
             )
             result.set_footer(
-                text=f'Rating: {love_test["rating"]} - Looks like you guys aren\'t very compatible ):'
+                text=f'Rating: {rating} - Looks like you guys aren\'t very compatible ):'
             )
             await ctx.send(embed=result)
-        elif 10 < int(love_test['rating']) < 40:
+        elif 10 < int(rating) < 40:
             result = discord.Embed(
                 description=f'{person1.display_name} - 🖤 - {person2.display_name}',
                 colour=0xffb5f7,
                 timestamp=ctx.message.created_at
             )
             result.set_footer(
-                text=f'Rating: {love_test["rating"]} - There may be something here...'
+                text=f'Rating: {rating} - There may be something here...'
             )
             await ctx.send(embed=result)
-        elif 40 < int(love_test['rating']) < 70:
+        elif 40 < int(rating) < 70:
             result = discord.Embed(
                 description=f'{person1.display_name} - 💙 - {person2.display_name}',
                 colour=0xffb5f7,
                 timestamp=ctx.message.created_at
             )
             result.set_footer(
-                text=f'Rating: {love_test["rating"]} - This could be a match'
+                text=f'Rating: {rating} - This could be a match'
             )
             await ctx.send(embed=result)
-        elif 70 < int(love_test['rating']) < 90:
+        elif 70 < int(rating) < 90:
             result = discord.Embed(
                 description=f'{person1.display_name} - ❤️ - {person2.display_name}',
                 colour=0xffb5f7,
                 timestamp=ctx.message.created_at
             )
             result.set_footer(
-                text=f'Rating: {love_test["rating"]} - Very good match'
+                text=f'Rating: {rating} - Very good match'
             )
             await ctx.send(embed=result)
         else:
@@ -241,7 +243,7 @@ class Fun(commands.Cog):
                 timestamp=ctx.message.created_at
             )
             result.set_footer(
-                text=f'Rating: {love_test["rating"]} - Match made in heaven!'
+                text=f'Rating: {rating} - Match made in heaven!'
             )
             await ctx.send(embed=result)
 
