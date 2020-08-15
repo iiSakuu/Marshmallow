@@ -52,7 +52,7 @@ class Owner(commands.Cog):
     # Intended for marshmallow nickname change
     @commands.is_owner()
     @commands.command()
-    async def setnick(self, ctx, member: discord.Member, message: str, *, reason=None):
+    async def setnick(self, ctx, member: discord.Member, *, message: str, reason=None):
         await ctx.message.delete()
         await member.edit(nick=message, reason=reason)
         await ctx.send(f'Changed my nickname to `{message}`.')

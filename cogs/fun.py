@@ -174,6 +174,7 @@ class Fun(commands.Cog):
             text='Normal -> OwO'
         )
 
+        await ctx.message.delete()
         await ctx.send(embed=owo_translater)
 
     @commands.command(aliases=['love'])
@@ -187,13 +188,62 @@ class Fun(commands.Cog):
 
         love_test = await ctx.bot.con.fetchone('SELECT * FROM Love_Tester WHERE user_id=$1 AND other_person_id=$2', person1.id, person2.id)
 
+        rating = random.randint(0, 100)
+
         if love_test is None:
-            rating = random.randint(0, 100)
             await ctx.bot.con.execute('INSERT INTO Love_Tester (user_id, other_person_id, rating) VALUES ($1, $2, $3)', person1.id, person2.id, rating)
             await ctx.bot.con.execute('INSERT INTO Love_Tester (user_id, other_person_id, rating) VALUES ($1, $2, $3)', person2.id, person1.id, rating)
-            await ctx.send(f'**{person1.display_name}** and **{person2.display_name}** have a rating of {rating}%')
+
+        if int(love_test['rating']) < 10:
+            result = discord.Embed(
+                description=f'{person1.display_name} - 💔 - {person2.display_name}',
+                colour=0xffb5f7,
+                timestamp=ctx.message.created_at
+            )
+            result.set_footer(
+                text=f'Rating: {love_test["rating"]} - Looks like you guys aren\'t very compatible ):'
+            )
+            await ctx.send(embed=result)
+        elif 10 < int(love_test['rating']) < 40:
+            result = discord.Embed(
+                description=f'{person1.display_name} - 🖤 - {person2.display_name}',
+                colour=0xffb5f7,
+                timestamp=ctx.message.created_at
+            )
+            result.set_footer(
+                text=f'Rating: {love_test["rating"]} - There may be something here...'
+            )
+            await ctx.send(embed=result)
+        elif 40 < int(love_test['rating']) < 70:
+            result = discord.Embed(
+                description=f'{person1.display_name} - 💙 - {person2.display_name}',
+                colour=0xffb5f7,
+                timestamp=ctx.message.created_at
+            )
+            result.set_footer(
+                text=f'Rating: {love_test["rating"]} - This could be a match'
+            )
+            await ctx.send(embed=result)
+        elif 70 < int(love_test['rating']) < 90:
+            result = discord.Embed(
+                description=f'{person1.display_name} - ❤️ - {person2.display_name}',
+                colour=0xffb5f7,
+                timestamp=ctx.message.created_at
+            )
+            result.set_footer(
+                text=f'Rating: {love_test["rating"]} - Very good match'
+            )
+            await ctx.send(embed=result)
         else:
-            await ctx.send(f'**{person1.display_name}** and **{person2.display_name}** have a rating of {love_test["rating"]}%')
+            result = discord.Embed(
+                description=f'**{person1.display_name}** - 💕 - **{person2.display_name}**',
+                colour=0xffb5f7,
+                timestamp=ctx.message.created_at
+            )
+            result.set_footer(
+                text=f'Rating: {love_test["rating"]} - Match made in heaven!'
+            )
+            await ctx.send(embed=result)
 
     @commands.command()
     async def lovelist(self, ctx):
