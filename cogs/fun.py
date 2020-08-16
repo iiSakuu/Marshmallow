@@ -193,12 +193,13 @@ class Fun(commands.Cog):
         if love_test is None:
             await ctx.bot.con.execute('INSERT INTO Love_Tester (user_id, other_person_id, rating) VALUES ($1, $2, $3)', person1.id, person2.id, rating)
             await ctx.bot.con.execute('INSERT INTO Love_Tester (user_id, other_person_id, rating) VALUES ($1, $2, $3)', person2.id, person1.id, rating)
+            await ctx.bot.con.execute('INSERT INTO Love_Ranking (user_id, other_person_id, rating) VALUES ($1, $2, $3)', person1.id, person2.id, rating)
         else:
             rating = love_test['rating']
 
         if 0 < int(rating) < 10:
             result = discord.Embed(
-                description=f'{person1.display_name} - 💔 - {person2.display_name}',
+                description=f'**{person1.display_name}** - 💔 - **{person2.display_name}**',
                 colour=0xffb5f7,
                 timestamp=ctx.message.created_at
             )
@@ -218,7 +219,7 @@ class Fun(commands.Cog):
             await ctx.send(embed=result)
         elif 40 < int(rating) < 70:
             result = discord.Embed(
-                description=f'{person1.display_name} - 💙 - {person2.display_name}',
+                description=f'**{person1.display_name}** - 💙 - **{person2.display_name}**',
                 colour=0xffb5f7,
                 timestamp=ctx.message.created_at
             )
@@ -228,7 +229,7 @@ class Fun(commands.Cog):
             await ctx.send(embed=result)
         elif 70 < int(rating) < 90:
             result = discord.Embed(
-                description=f'{person1.display_name} - ❤️ - {person2.display_name}',
+                description=f'**{person1.display_name}** - ❤️ - **{person2.display_name}**',
                 colour=0xffb5f7,
                 timestamp=ctx.message.created_at
             )
@@ -250,9 +251,31 @@ class Fun(commands.Cog):
     @commands.command()
     async def lovelist(self, ctx):
 
-        members = [member.id for member in guild.members]
+        members = [str(member.id) for member in ctx.guild.members]
 
-        love_list = await ctx.bot.con.fetchone(f'SELECT * FROM Love_Tester WHERE user_id IN ({members})')
+        love_list = await ctx.bot.con.fetchall(f'SELECT * FROM Love_Ranking WHERE user_id IN ({", ".join(members)}) ORDER BY rating DESC')
+
+        member_info = [
+            f'{ctx.guild.get_member(member["user_id"]).display_name} and {ctx.guild.get_member(member["other_person_id"]).display_name} - {member["rating"]}%'
+            for member in love_list
+        ]
+        final = "\n".join(member_info)
+
+        ranking_message = discord.Embed(
+            title=f"{ctx.guild.name}'s match rankings",
+            description=final,
+            colour=0xffb5f7,
+            timestamp=ctx.message.created_at
+        )
+        ranking_message.set_thumbnail(
+            url=ctx.guild.icon_url
+        )
+        ranking_message.set_footer(
+            text=f'Requested by {ctx.author.display_name}',
+            icon_url=ctx.author.avatar_url
+        )
+
+        await ctx.send(embed=ranking_message)
 
 def setup(bot):
     bot.add_cog(Fun(bot))
