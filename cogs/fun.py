@@ -253,7 +253,7 @@ class Fun(commands.Cog):
 
         members = [str(member.id) for member in ctx.guild.members]
 
-        love_list = await ctx.bot.con.fetchall(f'SELECT * FROM Love_Ranking WHERE user_id IN ({", ".join(members)}) ORDER BY rating DESC')
+        love_list = await ctx.bot.con.fetchall(f'SELECT * FROM Love_Ranking WHERE user_id AND other_person_id IN ({", ".join(members)}) ORDER BY rating DESC')
 
         member_info = [
             f'{ctx.guild.get_member(member["user_id"]).display_name} and {ctx.guild.get_member(member["other_person_id"]).display_name} - {member["rating"]}%'

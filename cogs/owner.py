@@ -71,6 +71,15 @@ class Owner(commands.Cog):
         )
         await ctx.send(embed=servers)
 
+    @commands.is_owner()
+    @commands.command()
+    async def db(self, ctx, *, message):
+        '''Insert, delete or update rows'''
+
+        await ctx.bot.con.execute(message)
+
+        await ctx.send('Completed!')
+
 
 def setup(bot):
     bot.add_cog(Owner(bot))
