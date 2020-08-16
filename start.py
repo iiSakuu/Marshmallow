@@ -38,8 +38,6 @@ async def on_message(message):
         bot.owo_counter += 1
     await bot.process_commands(message)
 
-# for Juli server
-
 
 @bot.event
 async def on_ready():
@@ -66,5 +64,6 @@ for cog in os.listdir('.//cogs'):
             print(f'{cog} can not be loaded:')
             raise e
 
+bot.load_extension("jishaku")
 bot.loop.create_task(list_guilds())
 bot.loop.run_until_complete(start())
