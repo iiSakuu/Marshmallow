@@ -42,6 +42,11 @@ class Actions(commands.Cog):
                 embed=slapparoo
             )
 
+        elif member.id == 712041909496971266:
+            await ctx.send(
+                'Access denied.'
+            )
+
         else:
             await ctx.send(
                 file=f,

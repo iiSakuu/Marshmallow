@@ -435,6 +435,49 @@ class Misc(commands.Cog):
             deleterow = await ctx.bot.con.execute('DELETE FROM Quotes WHERE guild_id=$1 and quote_id=$2', ctx.guild.id, message)
             await ctx.send(f'Deleted quote `{message}`.')
 
+    @commands.command(aliases=['shipname'])
+    async def ship(self, ctx, member : discord.Member, member2 : discord.Member = None):
+        '''Find out the ship name of two people!'''
+
+        if member2 is None:
+            member2 = ctx.author
+
+        if len(member.display_name) < 4:
+            N = len(member.display_name) / 2
+
+            firstmember = member.display_name
+            firstship = firstmember[0:int(N)]
+
+            secondmember = member2.display_name
+            secondship = secondmember[0:4]
+
+        elif len(member2.display_name) < 4 :
+            N = len(member2.display_name) / 2
+
+            firstmember = member.display_name
+            firstship = firstmember[0:4]
+
+            secondmember = member2.display_name
+            secondship = secondmember[0:int(N)]
+
+        else:
+
+            firstmember = member.display_name
+            firstship = firstmember[0:4]
+
+            secondmember = member2.display_name
+            secondship = secondmember[0:4]
+
+        shipname = firstship + secondship
+
+        embed = discord.Embed(
+            description=f'{member.display_name} + {member2.display_name} = **{shipname}**',
+            colour=0xffb5f7,
+            timestamp=ctx.message.created_at
+            )
+
+        await ctx.send(embed=embed)
+
 
 def setup(bot):
     bot.add_cog(Misc(bot))
