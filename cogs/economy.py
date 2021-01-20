@@ -38,6 +38,20 @@ class Economy(commands.Cog):
             await ctx.bot.con.fetchone('INSERT INTO Currency (user_id, moneys) VALUES ($1, $2)', member.id, amount)
         await ctx.send(f'Successfully given ``{amount}`` marshmallows to **{member.name}**')
 
+    @commands.is_owner()
+    @commands.command()
+    async def givemoney(self, ctx, member: discord.Member, amount: int):
+        '''OP asf remove money - owner only for a reason
+           Become the government?'''
+
+        row = await ctx.bot.con.fetchone('SELECT * FROM Currency WHERE user_id=$1', member.id)
+        if row is not None:
+            finalamount = (row['moneys'] - amount)
+            await ctx.bot.con.execute('UPDATE Currency SET moneys=$1 WHERE user_id=$2', finalamount, member.id)
+        else:
+            await ctx.send('This person has nothing in their bank!')
+        await ctx.send(f'Successfully removed ``{amount}`` marshmallows from **{member.name}**')
+
     @commands.command()
     async def daily(self, ctx):
         '''Get a daily amount of money'''
@@ -82,6 +96,23 @@ class Economy(commands.Cog):
                 timestamp=ctx.message.created_at
                 )
             await ctx.send(embed=embed)
+
+    @commands.command()
+    async def shop(self, ctx):
+        '''Spend your totally hard earned money on trivial things'''
+        shop = discord.Embed(
+            title="Marshmallow's stash",
+            description='''Hi! Welcome to my shop, here are all the things we have today:
+            `1` Marshmallow ---- 100 `marshmallows` - used as `+rep`''',
+            colour=0xffb5f7,
+            timestamp=ctx.message.created_at
+        )
+        await ctx.send(embed=shop)
+
+    @commands.command()
+    async def buy(self, ctx, number: int, quantity: int = None):
+        '''Buy things from the shop with your hard earned money'''
+
 
 def setup(bot):
     bot.add_cog(Economy(bot))
